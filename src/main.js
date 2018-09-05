@@ -36,7 +36,6 @@ function init(){
     createPixel();
     cleanScreen(true);  
     bindElements();
-
 }
 
 /**
@@ -185,6 +184,7 @@ function bindElements(){
     var txtTranslationX = document.getElementById('txtTransX');         // Translation X value
     var txtTranslationY = document.getElementById('txtTransY');         // Translation Y value
     var fillButton = document.getElementById('btnFill');                // Fill area button
+    var rotationButton = document.getElementById('btnRotation');        // Rotation button
 
 
     // If-Else vs SwitchCase
@@ -206,13 +206,17 @@ function bindElements(){
             case txtCircleRadius:
                 break;
             case translationButton:
-                makeTranslation(Math.round(txtTranslationX.value),Math.round(txtTranslationY.value));
+                applyTranslation(Math.round(txtTranslationX.value),Math.round(txtTranslationY.value));
                 break;
             case cleanButton:
                 cleanScreen(true);
                 break;
             case fillButton:
                 setOperation('fillArea');
+                break;
+            case rotationButton:
+                var angle = textPopUp("Insira o ângulo","Angulo");
+                applyRotation(angle);
                 break;
             case txtCircleRadius:
             case txtTranslationX:
@@ -224,7 +228,7 @@ function bindElements(){
     });
 
     // Set current color
-    strokeColor.addEventListener('input', function(ev){
+    lineColor.addEventListener('input', function(ev){
         setColor();
     });
 }
@@ -249,7 +253,7 @@ function cleanScreen(fullReset){
  * @param {*} xTrans 
  * @param {*} yTrans 
  */
-function makeTranslation(xTrans, yTrans){
+function applyTranslation(xTrans, yTrans){
     // Translate lines
     canvas.content.lines.forEach(element => {
         element.A.x+= xTrans;
@@ -264,7 +268,6 @@ function makeTranslation(xTrans, yTrans){
         element.center.y -= yTrans;
     });
 
-    console.log(canvas.content);
     redrawCanvas();
 
 }
@@ -337,8 +340,8 @@ function cleanPoints(){
  * Set color to future operations
  */
 function setColor(actColor){
-    var strokeColor = document.getElementById('strokeColor');           // Stroke color input
-    actColor = actColor || strokeColor.value;
+    var lineColor = document.getElementById('lineColor');           // Stroke color input
+    actColor = actColor || lineColor.value;
     color = actColor;
 
     // Get hexadecimal value and parse to int
@@ -399,6 +402,11 @@ function drawCircle(center,radius,newElement){
     }
 }
 
+/**
+ * Check if array A == array B
+ * @param {*} a 
+ * @param {*} b 
+ */
 function arraysEqual(a, b) {
     if (a === b) return true;
     if (a == null || b == null) return false;
@@ -413,12 +421,21 @@ function arraysEqual(a, b) {
     return true;
   }
 
+  /**
+   * Transform current selected color into an array with RGB values
+   * R[0], G[1], B[2]
+   */
 function colorToArray(){
     var rgb = "0x" + color.substring(1,color.length);
     var x = [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255];
     return x;
 }
 
+/**
+ * Get selected pixel color
+ * @param {*} x 
+ * @param {*} y 
+ */
 function getPixelColor(x,y){
     return context.getImageData(x,y,1,1).data;
 }
@@ -435,10 +452,6 @@ function boundaryFill(x,y){
         boundaryFill(x-1,y);
         boundaryFill(x,y+1);
         boundaryFill(x,y-1)
-        // boundaryFill(x+1,y+1);
-        // boundaryFill(x+1,y-1);
-        // boundaryFill(x-1,y+1);
-        // boundaryFill(x+1,y-1);
     }
 }
 
@@ -462,5 +475,50 @@ function floodFill(x,y,originalColor){
         floodFill(x+1,y-1,originalColor);
     } 
 }
+
+/**
+ * Apply rotation in elements according to a factor
+ * @param {*} factor 
+ */
+function applyRotation(factor){
+    if(isNaN(factor)) {
+        alert("Valor inválido!");
+        return;
+    };
+    factor = -toRadians(factor);
+    var newX, newY;
+
+    // Rotate lines
+    canvas.content.lines.forEach(element => {
+        
+        // Calculate new pointB position considering that pointA is new origin
+        element.B.x = element.B.x - element.A.x;
+        element.B.y = element.B.y - element.A.y;
+        newX = element.B.x * Math.cos(factor) - element.B.y * Math.sin(factor);
+        newY = element.B.x * Math.sin(factor) + element.B.y * Math.cos(factor);
+        element.B.x = newX + element.A.x;
+        element.B.y = newY + element.A.y;
+    });
+    
+    redrawCanvas();
+}
+
+/**
+ * Text popup
+ * @param {*} message 
+ * @param {*} placeholder 
+ */
+function textPopUp(message,placeholder){
+    var value = window.prompt(message,placeholder);
+    return value;
+}
+
+/**
+ * Get a degree angle and parse to radians
+ * @param {*} angle 
+ */
+function toRadians (angle) {
+    return angle * (Math.PI / 180);
+  }
 
 init();
